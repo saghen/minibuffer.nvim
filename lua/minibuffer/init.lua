@@ -156,6 +156,14 @@ function minibuffer.initialize()
     if config.cmd.enabled then
       cmd.update_cmdheight()
     end
+    -- ui2 expands 'cmdheight' to fit the cmdline, which resizes the windows
+    local ui2 = require("vim._core.ui2")
+    if not config.dynamic_window_resize and vim.o.cmdheight ~= ui2.cmdheight then
+      vim._with({ noautocmd = true, o = { splitkeep = "screen" } }, function()
+        vim.o.cmdheight = ui2.cmdheight
+      end)
+      ui2.msg.set_pos()
+    end
   end
   cmdline.cmdline_hide = function(level, abort)
     original_hide(level, abort)

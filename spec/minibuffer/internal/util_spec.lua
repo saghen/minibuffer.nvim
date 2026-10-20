@@ -712,15 +712,15 @@ describe("minibuffer.internal.util", function()
       })
     end)
 
-    it("updates cmdheight through vim._with", function()
+    it("grows the command window without changing cmdheight", function()
       util.set_cmdheight(states, false, 5)
 
       assert.stub(vim_api.nvim_win_set_config).called_with(win, {
         hide = false,
         height = 5,
       })
-      assert.equal(5, cmdheight_store)
-      assert.True(ext_msg_set_pos_called)
+      assert.equal(1, cmdheight_store)
+      assert.False(ext_msg_set_pos_called)
     end)
 
     it("does not change cmdheight when it already matches", function()

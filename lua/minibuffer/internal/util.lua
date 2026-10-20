@@ -272,6 +272,10 @@ end
 ---@return table<integer, minibuffer.util.WindowState>
 function M.get_window_states()
   local states = {}
+  -- The windows are left untouched when the minibuffer overlays them, so there's nothing to restore
+  if not require("minibuffer.config").dynamic_window_resize then
+    return states
+  end
   for _, win in ipairs(get_resizable_windows()) do
     local view = vim.api.nvim_win_call(win, function()
       return vim.fn.winsaveview()
@@ -332,7 +336,10 @@ function M.set_cmdheight(states, resize_windows, height)
     vim.api.nvim_win_set_config(win, { hide = false, height = height })
   end
 
-  if vim.api.nvim_get_option_value("cmdheight", { scope = "global" }) ~= height then
+  if
+    resize_windows
+    and vim.api.nvim_get_option_value("cmdheight", { scope = "global" }) ~= height
+  then
     -- Avoid moving the cursor with 'splitkeep' = "screen", and altering the user
     -- configured value with noautocmd.
     vim._with({ noautocmd = true, o = { splitkeep = "screen" } }, function()

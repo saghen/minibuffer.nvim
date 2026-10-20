@@ -389,21 +389,20 @@ function SelectSession:post_start()
     pcall(vim.api.nvim_feedkeys, self._input, "t", false)
   end
 
-  vim.schedule(function()
-    vim.api.nvim_buf_attach(self._entry.buf, false, {
-      on_lines = function(_, _, _, _, _, _, _)
-        vim.api.nvim_set_option_value("modified", false, { buf = self._entry.buf })
-        if self._closed then
-          return true
-        end
-        local input = vim.fn.prompt_getinput(self._entry.buf)
-        if input ~= self._input then
-          self._input = input
-          self:refresh_results()
-        end
-      end,
-    })
-  end)
+  -- Attach right away, otherwise keys typed straight after opening don't refresh the results
+  vim.api.nvim_buf_attach(self._entry.buf, false, {
+    on_lines = function(_, _, _, _, _, _, _)
+      vim.api.nvim_set_option_value("modified", false, { buf = self._entry.buf })
+      if self._closed then
+        return true
+      end
+      local input = vim.fn.prompt_getinput(self._entry.buf)
+      if input ~= self._input then
+        self._input = input
+        self:refresh_results()
+      end
+    end,
+  })
 
   if #self._items == 0 then
     self:refresh_results()

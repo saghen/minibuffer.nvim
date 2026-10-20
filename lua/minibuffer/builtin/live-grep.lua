@@ -8,6 +8,7 @@ local util = require("minibuffer.internal.util")
 local debounce = util.make_debounced(100)
 local generation = 0
 local current_proc ---@type vim.SystemObj?
+local pending ---@type fun()? Search to start once the current one has exited
 
 local function parse_rg_line(line)
   -- rg format:
@@ -40,22 +41,28 @@ local function filter_fn(ctx)
 end
 
 local function run_grep(opts, input, cb)
+  generation = generation + 1
+  local current = generation
+
   if input == "" then
+    pending = nil
     cb({})
     return
   end
 
-  generation = generation + 1
-  local current = generation
+  -- Tools like zg lock their cache and fail while another instance is running, so wait for the
+  -- previous search to exit before starting this one
+  if current_proc then
+    pending = function()
+      run_grep(opts, input, cb)
+    end
+    current_proc:kill("sigterm")
+    return
+  end
 
   local cmd = vim.list_extend({}, opts.rg_opts)
 
   cmd[#cmd + 1] = input
-
-  if current_proc then
-    current_proc:kill("sigterm")
-    current_proc = nil
-  end
 
   local system_opts = { text = true }
 
@@ -64,8 +71,11 @@ local function run_grep(opts, input, cb)
   end
 
   current_proc = vim.system(cmd, system_opts, function(res)
-    if current_proc then
-      current_proc = nil
+    current_proc = nil
+    if pending then
+      local next_grep = pending
+      pending = nil
+      return next_grep()
     end
 
     if current ~= generation then

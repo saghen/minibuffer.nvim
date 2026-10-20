@@ -3,13 +3,10 @@ if vim.fn.executable("rg") == 0 then
   return function() end
 end
 
-local util = require("minibuffer.internal.util")
-
-local debounce = util.make_debounced(50)
-
 local all_files = {} ---@type string[]
 local loading = false
 local loaded_cwd = nil
+local pending_cb ---@type fun(items: string[]|nil, err: string|nil)?
 
 -- Format each file path: directory part in Comment, filename normal
 local function format_fn(item)
@@ -33,6 +30,8 @@ end
 
 -- Load all files once using rg
 local function load_files(opts, cb)
+  -- The latest request gets the files once they're loaded
+  pending_cb = cb
   if loading then
     return
   end
@@ -54,14 +53,15 @@ local function load_files(opts, cb)
     loading = false
     if res.code ~= 0 then
       vim.schedule(function()
-        cb(nil, res.stderr)
+        pending_cb(nil, res.stderr)
       end)
       return
     end
 
+    all_files = vim.split(res.stdout, "\n", { trimempty = true })
     loaded_cwd = opts.cwd
     vim.schedule(function()
-      cb(vim.split(res.stdout, "\n", { trimempty = true }))
+      pending_cb(all_files)
     end)
   end)
 end
@@ -99,9 +99,7 @@ return function(opts)
     dynamic_height = false,
     max_height = 15,
     fetch_fn = function(_, cb)
-      debounce(function()
-        load_files(opts, cb)
-      end)
+      load_files(opts, cb)
     end,
     format_fn = format_fn,
     filter_fn = filter_fn,

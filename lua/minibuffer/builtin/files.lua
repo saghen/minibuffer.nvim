@@ -69,6 +69,7 @@ end
 ---@class minibuffer.builtin.FilesGrepOpts
 ---@field rg_opts string[]|nil
 ---@field cwd string|nil
+---@field max_height integer|nil Maximum number of results shown at once
 
 ---@param opts minibuffer.builtin.FilesGrepOpts
 return function(opts)
@@ -97,7 +98,7 @@ return function(opts)
     prompt = "Files: ",
     multi = true,
     dynamic_height = false,
-    max_height = 15,
+    max_height = opts.max_height or 15,
     fetch_fn = function(_, cb)
       debounce(function()
         load_files(opts, cb)

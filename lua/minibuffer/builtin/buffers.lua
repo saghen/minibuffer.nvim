@@ -90,7 +90,8 @@ local function get_replacement_buf(current)
   return vim.api.nvim_create_buf(false, true)
 end
 
-return function()
+---@param opts? { max_height?: integer }
+return function(opts)
   require("minibuffer.internal.guard").check()
 
   local active_win
@@ -104,7 +105,7 @@ return function()
     items = buffers,
     multi = true,
     dynamic_height = false,
-    max_height = 15,
+    max_height = opts and opts.max_height or 15,
     fetch_fn = function(_, cb)
       cb(buffers)
     end,

@@ -68,6 +68,7 @@ end
 
 ---@class minibuffer.builtin.ListOpts
 ---@field type? "quickfix"|"loclist"
+---@field max_height? integer Maximum number of results shown at once
 
 ---@param opts? minibuffer.builtin.ListOpts
 return function(opts)
@@ -81,7 +82,7 @@ return function(opts)
     prompt = opts.type == "loclist" and "Location List: " or "Quickfix List: ",
     multi = false,
     dynamic_height = false,
-    max_height = 15,
+    max_height = opts.max_height or 15,
     fetch_fn = function(_, cb)
       cb(items)
     end,

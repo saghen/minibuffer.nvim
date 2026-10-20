@@ -6,8 +6,6 @@ end
 local util = require("minibuffer.internal.util")
 
 local debounce = util.make_debounced(100)
-local generation = 0
-local current_proc ---@type vim.SystemObj?
 
 local function parse_rg_line(line)
   -- rg format:
@@ -45,17 +43,9 @@ local function run_grep(opts, input, cb)
     return
   end
 
-  generation = generation + 1
-  local current = generation
-
   local cmd = vim.list_extend({}, opts.rg_opts)
 
   cmd[#cmd + 1] = input
-
-  if current_proc then
-    current_proc:kill("sigterm")
-    current_proc = nil
-  end
 
   local system_opts = { text = true }
 
@@ -63,29 +53,24 @@ local function run_grep(opts, input, cb)
     system_opts.cwd = opts.cwd
   end
 
-  current_proc = vim.system(cmd, system_opts, function(res)
-    if current_proc then
-      current_proc = nil
-    end
-
-    if current ~= generation then
+  vim.system(cmd, system_opts, function(res)
+    if res.code ~= 0 then
+      vim.schedule(function()
+        cb(nil, res.stderr)
+      end)
       return
     end
 
     local out = {}
-
-    if res.code ~= 0 then
-      cb(nil, res.stderr)
-      return
-    end
-
     for _, line in ipairs(vim.split(res.stdout, "\n", { trimempty = true })) do
       local item = parse_rg_line(line)
       if item then
         out[#out + 1] = item
       end
     end
-    cb(out)
+    vim.schedule(function()
+      cb(out)
+    end)
   end)
 end
 

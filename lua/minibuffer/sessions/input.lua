@@ -54,6 +54,8 @@ end
 ---@field _scroll_offset integer
 ---@field _loading boolean
 ---@field _fetch_generation integer
+---@field _fetching boolean
+---@field _refetch boolean
 local InputSession = {}
 InputSession.__index = InputSession
 InputSession = InputSession
@@ -122,6 +124,8 @@ function InputSession.new(opts)
     _scroll_offset = 0,
     _loading = false,
     _fetch_generation = 0,
+    _fetching = false,
+    _refetch = false,
   }, InputSession)
   assert(self.fetch_fn ~= nil, "Must provide fetch_fn")
   assert(self.format_fn ~= nil, "Must provide format_fn")
@@ -365,20 +369,18 @@ function InputSession:post_start()
     pcall(vim.api.nvim_feedkeys, self._input, "t", false)
   end
 
-  vim.schedule(function()
-    vim.api.nvim_buf_attach(self._entry.buf, false, {
-      on_lines = function(_, _, _, _, _, _, _)
-        if self._closed then
-          return true
-        end
-        local input = vim.fn.prompt_getinput(self._entry.buf)
-        if input ~= self._input then
-          self._input = input
-          self:refresh_suggestions()
-        end
-      end,
-    })
-  end)
+  vim.api.nvim_buf_attach(self._entry.buf, false, {
+    on_lines = function(_, _, _, _, _, _, _)
+      if self._closed then
+        return true
+      end
+      local input = vim.fn.prompt_getinput(self._entry.buf)
+      if input ~= self._input then
+        self._input = input
+        self:refresh_suggestions()
+      end
+    end,
+  })
 
   if #self._items == 0 then
     self:refresh_suggestions()
@@ -411,6 +413,8 @@ function InputSession:close(done)
 
   -- Invalidate any outstanding fetch requests
   self._fetch_generation = self._fetch_generation + 1
+  self._fetching = false
+  self._refetch = false
 
   local cleaned_up = false
 
@@ -484,7 +488,8 @@ function InputSession:get_ctx()
   }
 end
 
---- Refresh suggestions based on the user input
+--- Refresh suggestions based on the user input. Only one fetch runs at a time: when the input
+--- changes while one runs, its suggestions are still shown, and then the latest input is fetched
 function InputSession:refresh_suggestions()
   if self._closed then
     return
@@ -496,37 +501,45 @@ function InputSession:refresh_suggestions()
   end
 
   self._loading = true
+  if self._fetching then
+    self._refetch = true
+    return
+  end
+  self._fetching = true
   self._fetch_generation = self._fetch_generation + 1
   local generation = self._fetch_generation
   local ok, err = pcall(self.fetch_fn, self._input, function(items, err)
-    -- discard stale
+    -- discard the results of a closed session
     if self._closed or generation ~= self._fetch_generation then
       return
     end
-    if err then
-      self._loading = false
-      vim.schedule(function()
-        self:render()
-      end)
-      return
-    end
+    self._fetching = false
+    local refetch = self._refetch
+    self._refetch = false
 
-    self._items = items or {}
-    if #self._items == 0 then
-      self._current_index = 0
-      self._scroll_offset = 0
-    else
-      self._current_index = 1
-      self._scroll_offset = 0
+    if not err then
+      self._items = items or {}
+      if #self._items == 0 then
+        self._current_index = 0
+        self._scroll_offset = 0
+      else
+        self._current_index = 1
+        self._scroll_offset = 0
+      end
     end
     self._loading = false
 
+    if refetch then
+      self:refresh_suggestions()
+    end
     vim.schedule(function()
       self:render()
     end)
   end)
 
   if not ok then
+    self._fetching = false
+    self._refetch = false
     vim.notify("Failed to fetch data: " .. (type(err) == "string" and err or "ERROR"))
     return
   end

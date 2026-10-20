@@ -804,17 +804,76 @@ describe("minibuffer.sessions.input", function()
       assert.spy(session.render).called_at_least(1)
     end)
 
-    it("increments the fetch generation", function()
+    it("runs one fetch at a time, then fetches the latest input", function()
+      local session = new_session()
+      session._closed = false
+      session.render = spy.new(function() end)
+
+      local calls = {}
+      session.fetch_fn = function(input, cb)
+        calls[#calls + 1] = { input = input, cb = cb }
+      end
+
+      session._input = "a"
+      session:refresh_suggestions()
+      session._input = "ab"
+      session:refresh_suggestions()
+      session._input = "abc"
+      session:refresh_suggestions()
+
+      assert.equal(1, #calls)
+      assert.is_true(session._loading)
+
+      -- shown in the meantime
+      calls[1].cb({ "a" })
+      assert.same({ "a" }, session._items)
+      assert.equal(2, #calls)
+      assert.equal("abc", calls[2].input)
+      assert.is_true(session._loading)
+
+      calls[2].cb({ "abc" })
+      assert.same({ "abc" }, session._items)
+      assert.is_false(session._loading)
+      assert.equal(2, #calls)
+    end)
+
+    it("fetches the latest input after a failed fetch", function()
+      local session = new_session()
+      session._closed = false
+      session.render = spy.new(function() end)
+
+      local calls = {}
+      session.fetch_fn = function(input, cb)
+        calls[#calls + 1] = { input = input, cb = cb }
+      end
+
+      session:refresh_suggestions()
+      session._input = "ab"
+      session:refresh_suggestions()
+      calls[1].cb(nil, "failed")
+
+      assert.equal(2, #calls)
+      assert.equal("ab", calls[2].input)
+      assert.is_true(session._loading)
+    end)
+
+    it("does not wait for a fetch from before the session was closed", function()
       local session = new_session()
       session._closed = false
 
-      session.fetch_fn = function() end
+      local calls = {}
+      session.fetch_fn = function(input, cb)
+        calls[#calls + 1] = { input = input, cb = cb }
+      end
 
       session:refresh_suggestions()
-      assert.equal(1, session._fetch_generation)
-
+      session:close()
+      session._closed = false
       session:refresh_suggestions()
-      assert.equal(2, session._fetch_generation)
+
+      assert.equal(2, #calls)
+      calls[1].cb({ "old" })
+      assert.same({}, session._items)
     end)
 
     it("resets selection when suggestions are empty", function()
@@ -895,30 +954,6 @@ describe("minibuffer.sessions.input", function()
       assert
         .stub(vim_notify_stub)
         .called_with(match.matches("Failed to fetch data", 0, true))
-    end)
-
-    it("discards a stale fetch result", function()
-      local session = new_session()
-      session._closed = false
-
-      local callbacks = {}
-
-      session.fetch_fn = function(_, cb)
-        callbacks[#callbacks + 1] = cb
-      end
-
-      session:refresh_suggestions()
-      session:refresh_suggestions()
-
-      callbacks[1]({ "stale" })
-
-      assert.same({}, session._items)
-      assert.equal(0, session._current_index)
-
-      callbacks[2]({ "current" })
-
-      assert.same({ "current" }, session._items)
-      assert.equal(1, session._current_index)
     end)
 
     it("discards results after the session closes", function()

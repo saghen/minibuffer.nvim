@@ -77,6 +77,8 @@ end
 ---@class minibuffer.builtin.LiveGrepOpts
 ---@field rg_opts string[]|nil
 ---@field cwd string|nil
+---@field debounce boolean|nil Wait for typing to pause before searching (default: true)
+---@field max_height integer|nil Maximum number of results shown at once
 
 ---@param opts minibuffer.builtin.LiveGrepOpts
 return function(opts)
@@ -98,6 +100,7 @@ return function(opts)
       "!**/.git/**",
     },
     cwd = nil,
+    debounce = true,
   }
   opts = vim.tbl_deep_extend("force", default_opts, opts or {})
 
@@ -106,8 +109,11 @@ return function(opts)
     prompt = "Grep: ",
     multi = true,
     dynamic_height = false,
-    max_height = 18,
+    max_height = opts.max_height or 18,
     fetch_fn = function(input, cb)
+      if not opts.debounce then
+        return run_grep(opts, input, cb)
+      end
       debounce(function()
         run_grep(opts, input, cb)
       end)

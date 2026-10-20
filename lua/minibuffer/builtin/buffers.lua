@@ -93,8 +93,9 @@ end
 
 ---@class minibuffer.builtin.BuffersOpts
 ---@field show_unloaded boolean|nil Whether to show unloaded buffers in list
+---@field max_height integer|nil Maximum height of the picker
 
----@param opts minibuffer.builtin.BuffersOpts
+---@param opts? minibuffer.builtin.BuffersOpts
 return function(opts)
   require("minibuffer.internal.guard").check()
 
@@ -115,7 +116,7 @@ return function(opts)
     items = buffers,
     multi = true,
     dynamic_height = false,
-    max_height = 15,
+    max_height = opts.max_height or 15,
     fetch_fn = function(_, cb)
       cb(buffers)
     end,

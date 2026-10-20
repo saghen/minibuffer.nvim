@@ -23,6 +23,7 @@ local M = {}
 ---@field max_results integer?
 ---@field max_threads integer?
 ---@field show_score boolean?
+---@field max_height integer? Maximum number of results shown at once
 
 --- Run fff file search
 ---@param opts minibuffer.integrations.FFFindOpts
@@ -60,7 +61,7 @@ function M.file_search(opts)
     end,
     multi = true,
     dynamic_height = false,
-    max_height = 15,
+    max_height = opts.max_height or 15,
     format_fn = function(item)
       if not item then
         return {}
@@ -140,6 +141,7 @@ end
 ---@field cwd string|nil
 ---@field mode 'plain'|'regex'|'fuzzy'|nil
 ---@field smart_case boolean|nil
+---@field max_height integer|nil Maximum number of results shown at once
 
 --- Run fff grep
 ---@param opts minibuffer.integrations.FFFGrepOpts
@@ -165,7 +167,7 @@ function M.content_search(opts)
     end,
     multi = true,
     dynamic_height = false,
-    max_height = 15,
+    max_height = opts.max_height or 15,
     format_fn = function(item)
       if not item then
         return {}

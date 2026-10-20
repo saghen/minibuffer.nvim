@@ -103,7 +103,8 @@ local function filter_fn(ctx)
   return results
 end
 
-return function()
+---@param opts? { max_height?: integer }
+return function(opts)
   require("minibuffer.internal.guard").check()
 
   require("minibuffer").select({
@@ -111,7 +112,7 @@ return function()
     prompt = "Manpages: ",
     multi = false,
     dynamic_height = false,
-    max_height = 15,
+    max_height = opts and opts.max_height or 15,
     format_fn = format_fn,
     filter_fn = filter_fn,
     fetch_fn = function(input, cb)

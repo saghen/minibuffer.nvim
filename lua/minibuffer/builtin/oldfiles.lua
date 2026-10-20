@@ -54,6 +54,7 @@ end
 
 ---@class minibuffer.builtin.OldfilesOpts
 ---@field cwd string|nil
+---@field max_height integer|nil Maximum number of results shown at once
 
 ---@param opts minibuffer.builtin.OldfilesOpts
 return function(opts)
@@ -67,7 +68,7 @@ return function(opts)
     prompt = "Oldfiles: ",
     multi = true,
     dynamic_height = false,
-    max_height = 15,
+    max_height = opts.max_height or 15,
     fetch_fn = function(_, cb)
       cb(oldfiles)
     end,

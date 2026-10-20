@@ -133,7 +133,7 @@ minibuffer.core.ItemCompareFn                    *minibuffer.core.ItemCompareFn*
 minibuffer.core.FormatFn                              *minibuffer.core.FormatFn*
 
     Type: ~
-        fun(item:any):minibuffer.util.HighlightLine
+        fun(item:any,visible:any[]):minibuffer.util.HighlightLine
 
 
 minibuffer.core.CancelCallback                  *minibuffer.core.CancelCallback*

@@ -428,8 +428,8 @@ describe("minibuffer.sessions.input", function()
 
       session:render()
 
-      assert.spy(format_fn).called_with("one")
-      assert.spy(format_fn).called_with("two")
+      assert.spy(format_fn).called_with("one", { "one", "two" })
+      assert.spy(format_fn).called_with("two", { "one", "two" })
 
       assert.stub(util.write_highlighted_lines).called_with(display_buf, state.ns, {
         { { "one", "String" } },

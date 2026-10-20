@@ -282,9 +282,10 @@ function InputSession:render()
   -- Build display output
   local start_idx = self._scroll_offset + 1
   local end_idx = math.min(total, start_idx + display_height - 1)
+  local visible = vim.list_slice(self._items, start_idx, end_idx)
   local lines_data = {}
-  for i = start_idx, end_idx do
-    lines_data[#lines_data + 1] = self.format_fn(self._items[i])
+  for _, item in ipairs(visible) do
+    lines_data[#lines_data + 1] = self.format_fn(item, visible)
   end
   if self._loading then
     lines_data[#lines_data + 1] =

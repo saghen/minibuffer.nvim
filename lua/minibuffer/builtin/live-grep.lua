@@ -19,19 +19,31 @@ local function parse_rg_line(line)
   end
 
   return {
-    file = file,
+    file = (file:gsub("^%./", "")),
     line = tonumber(lnum),
     col = tonumber(col),
     text = text,
   }
 end
 
-local function format_fn(item)
-  local prefix = string.format("%s:%d:%d: ", item.file, item.line, item.col)
+local function format_prefix(item)
+  return string.format("%s:%d:%d", item.file, item.line, item.col)
+end
+
+local function format_fn(item, visible)
+  local prefix = format_prefix(item)
+  -- Align the text of the results on screen, capped so that one long path doesn't push
+  -- it off screen
+  local width = 0
+  for _, other in ipairs(visible) do
+    width = math.max(width, vim.fn.strdisplaywidth(format_prefix(other)))
+  end
+  width = math.min(width, math.floor(vim.o.columns / 2))
+  local padding = math.max(0, width - vim.fn.strdisplaywidth(prefix)) + 2
 
   return {
-    { text = prefix, hl = "MinibufferPath" },
-    { text = item.text, hl = "Normal" },
+    { text = prefix .. string.rep(" ", padding), hl = "MinibufferPath" },
+    { text = vim.trim(item.text), hl = "Normal" },
   }
 end
 

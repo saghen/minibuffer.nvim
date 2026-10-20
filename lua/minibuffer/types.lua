@@ -23,7 +23,7 @@
 ---@field close fun(self: minibuffer.core.Session, done: fun()|nil)
 
 ---@alias minibuffer.core.ItemCompareFn fun(old:any, new:any): boolean
----@alias minibuffer.core.FormatFn fun(item:any): minibuffer.util.HighlightLine
+---@alias minibuffer.core.FormatFn fun(item:any, visible:any[]): minibuffer.util.HighlightLine
 ---@alias minibuffer.core.CancelCallback fun()
 ---@alias minibuffer.core.CloseCallback fun(done?:fun())
 ---@alias minibuffer.core.ChangeCallback fun(value:string, item:any)

@@ -373,6 +373,30 @@ describe("minibuffer.sessions.select", function()
       assert.equal(2, opts.height)
     end)
 
+    it("fetches results before sizing the windows when there are no items", function()
+      local session = new_session({
+        fetch_fn = function(_, cb)
+          cb({ "one", "two", "three" })
+        end,
+      })
+
+      session:pre_start()
+
+      assert.same({ "one", "two", "three" }, session._items)
+      local opts = vim_api.nvim_open_win.calls[1].refs[3]
+      assert.equal(3, opts.height)
+    end)
+
+    it("does not refresh results when items already exist", function()
+      local session = new_session()
+      session._items = { "one" }
+      session.refresh_results = spy.new(function() end)
+
+      session:pre_start()
+
+      assert.spy(session.refresh_results).called_at_most(0)
+    end)
+
     it("uses at least one row for an empty display", function()
       local session = new_session()
 
@@ -843,23 +867,6 @@ describe("minibuffer.sessions.select", function()
       session:post_start()
 
       assert.stub(vim_api.nvim_buf_attach).called_with(entry_buf, false, match.is_table())
-    end)
-
-    it("refreshes results when there are no items", function()
-      session.refresh_results = spy.new(function() end)
-
-      session:post_start()
-
-      assert.spy(session.refresh_results).called_at_least(1)
-    end)
-
-    it("does not refresh results when items already exist", function()
-      session._items = { "one" }
-      session.refresh_results = spy.new(function() end)
-
-      session:post_start()
-
-      assert.spy(session.refresh_results).called_at_most(0)
     end)
   end)
 

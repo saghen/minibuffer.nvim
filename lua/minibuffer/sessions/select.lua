@@ -175,6 +175,11 @@ function SelectSession:pre_start()
   self._closed = false
   state.win_states = util.get_window_states()
 
+  -- Fetch before sizing the windows, so that synchronous fetchers show their items on the first render
+  if #self._items == 0 then
+    self:refresh_results()
+  end
+
   -- Setup display buffer and window
   local display_height = math.max(1, math.min(self.max_height, #self._items))
   self._display.buf = vim.api.nvim_create_buf(false, false)
@@ -410,10 +415,6 @@ function SelectSession:post_start()
       end
     end,
   })
-
-  if #self._items == 0 then
-    self:refresh_results()
-  end
 end
 
 --- Cancel session

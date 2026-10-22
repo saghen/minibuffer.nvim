@@ -658,6 +658,7 @@ minibuffer.core.SelectSessionOpts            *minibuffer.core.SelectSessionOpts*
     Fields: ~
         {resumable}       (boolean|nil)                              Whether this specific session is reusable
         {prompt}          (string|nil)                               The prompt string to display to the user
+        {initial_text}    (string|nil)                               The initial input text
         {max_height}      (integer|nil)                              The max height the minibuffer can grow to
         {multi}           (boolean|nil)                              Whether the user will be allowed to select multiple items
         {dynamic_height}  (boolean|nil)                              Whether the minibuffer should ever shrink as the items decrease
@@ -735,6 +736,13 @@ SelectSession:refresh_results()                  *SelectSession:refresh_results*
 
 SelectSession:accept()                                    *SelectSession:accept*
      Accept the current selection(s)
+
+
+SelectSession:set_input({input})                       *SelectSession:set_input*
+     Replace the user input and move the cursor to the end of it
+
+    Parameters: ~
+        {input}  (string)
 
 
 SelectSession:move({delta})                                 *SelectSession:move*

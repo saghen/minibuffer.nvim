@@ -868,6 +868,16 @@ describe("minibuffer.sessions.select", function()
 
       assert.stub(vim_api.nvim_buf_attach).called_with(entry_buf, false, match.is_table())
     end)
+
+    it("writes the initial input to the prompt", function()
+      session.set_input = spy.new(function() end)
+      session._input = "~/code/"
+
+      session:post_start()
+
+      assert.spy(session.set_input).called_with(session, "~/code/")
+      assert.stub(vim_api.nvim_feedkeys).called_at_most(0)
+    end)
   end)
 
   describe(":refresh_results", function()
@@ -1259,6 +1269,41 @@ describe("minibuffer.sessions.select", function()
       end)
 
       assert.is_true(session._closed)
+    end)
+  end)
+
+  describe(":set_input", function()
+    local session
+
+    before_each(function()
+      session = new_session({ prompt = "Find: ", initial_text = "abc" })
+      session._closed = false
+      session._entry = { buf = entry_buf, win = entry_win }
+      helper.stub_method(vim_api, "nvim_buf_line_count", function()
+        return 1
+      end)
+      helper.stub_method(vim_api, "nvim_win_set_cursor")
+    end)
+
+    it("starts with the initial input", function()
+      assert.equal("abc", session._input)
+    end)
+
+    it("replaces the prompt line and moves the cursor to the end", function()
+      session:set_input("~/code/")
+
+      assert
+        .stub(vim_api.nvim_buf_set_lines)
+        .called_with(entry_buf, 0, 1, false, { "Find: ~/code/" })
+      assert.stub(vim_api.nvim_win_set_cursor).called_with(entry_win, { 1, 13 })
+    end)
+
+    it("does nothing when closed", function()
+      session._closed = true
+
+      session:set_input("~/code/")
+
+      assert.stub(vim_api.nvim_buf_set_lines).called_at_most(0)
     end)
   end)
 

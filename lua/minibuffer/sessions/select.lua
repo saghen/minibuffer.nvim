@@ -73,6 +73,8 @@ SelectSession = SelectSession
 ---@field resumable boolean|nil
 ---The prompt string to display to the user
 ---@field prompt string|nil
+---The initial input text
+---@field initial_text string|nil
 ---The max height the minibuffer can grow to
 ---@field max_height integer|nil
 ---Whether the user will be allowed to select multiple items
@@ -128,7 +130,7 @@ function SelectSession.new(opts)
     _resumable = opts.resumable == true,
     _entry = { buf = nil, win = nil },
     _display = { buf = nil, win = nil },
-    _input = "",
+    _input = opts.initial_text or "",
     _items = {},
     _current_index = 1,
     _selected_indices = {},
@@ -399,7 +401,7 @@ function SelectSession:post_start()
   state.active_window = util.focus_win(self._entry.win)
   util.start_insert(self._entry.win)
   if self._input ~= "" then
-    pcall(vim.api.nvim_feedkeys, self._input, "t", false)
+    self:set_input(self._input)
   end
 
   vim.api.nvim_buf_attach(self._entry.buf, false, {
@@ -612,6 +614,24 @@ function SelectSession:accept()
       end)
     end
   end)
+end
+
+--- Replace the user input and move the cursor to the end of it
+---@param input string
+function SelectSession:set_input(input)
+  if self._closed or not win_state_is_valid(self._entry) then
+    return
+  end
+
+  local line_count = vim.api.nvim_buf_line_count(self._entry.buf)
+  vim.api.nvim_buf_set_lines(
+    self._entry.buf,
+    line_count - 1,
+    line_count,
+    false,
+    { self.prompt .. input }
+  )
+  vim.api.nvim_win_set_cursor(self._entry.win, { line_count, #self.prompt + #input })
 end
 
 --- Move the current selection up or down

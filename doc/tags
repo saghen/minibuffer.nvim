@@ -48,6 +48,7 @@ SelectSession:pre_start	minibuffer.txt	/*SelectSession:pre_start*
 SelectSession:refresh_results	minibuffer.txt	/*SelectSession:refresh_results*
 SelectSession:render	minibuffer.txt	/*SelectSession:render*
 SelectSession:resumable	minibuffer.txt	/*SelectSession:resumable*
+SelectSession:set_input	minibuffer.txt	/*SelectSession:set_input*
 SelectSession:toggle_selection	minibuffer.txt	/*SelectSession:toggle_selection*
 SelectSession:toggle_selection_all	minibuffer.txt	/*SelectSession:toggle_selection_all*
 SelectSession:type	minibuffer.txt	/*SelectSession:type*

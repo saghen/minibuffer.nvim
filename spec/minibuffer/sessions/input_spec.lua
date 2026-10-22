@@ -711,20 +711,28 @@ describe("minibuffer.sessions.input", function()
       assert.stub(vim_cmd_stub).called_with("startinsert!")
     end)
 
-    it("feeds initial input", function()
-      local session = new_session({
-        initial_text = "hello",
-      })
-      session._closed = false
-      session._entry = { buf = entry_buf, win = entry_win }
-      session._display = { buf = display_buf, win = display_win }
+    it(
+      "writes the initial input to the prompt, refreshing the suggestions once",
+      function()
+        local session = new_session({
+          initial_text = "hello",
+        })
+        session._closed = false
+        session._entry = { buf = entry_buf, win = entry_win }
+        session._display = { buf = display_buf, win = display_win }
+        session.refresh_suggestions = spy.new(function() end)
 
-      session:post_start()
+        session:post_start()
 
-      assert.stub(vim_api.nvim_feedkeys).called_with("hello", "t", false)
-    end)
+        assert
+          .stub(vim_api.nvim_buf_set_lines)
+          .called_with(entry_buf, 0, 1, false, match.is_table())
+        assert.spy(session.refresh_suggestions).called(1)
+        assert.stub(vim_api.nvim_feedkeys).called_at_most(0)
+      end
+    )
 
-    it("does not feed input when initial text is empty", function()
+    it("does not write input when initial text is empty", function()
       local session = new_session()
       session._closed = false
       session._entry = { buf = entry_buf, win = entry_win }
@@ -732,7 +740,7 @@ describe("minibuffer.sessions.input", function()
 
       session:post_start()
 
-      assert.stub(vim_api.nvim_feedkeys).called_at_most(0)
+      assert.stub(vim_api.nvim_buf_set_lines).called_at_most(0)
     end)
 
     it("attaches a buffer listener", function()

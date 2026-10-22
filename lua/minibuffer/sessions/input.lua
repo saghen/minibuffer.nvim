@@ -363,9 +363,6 @@ function InputSession:post_start()
   end
   state.active_window = util.focus_win(self._entry.win)
   util.start_insert(self._entry.win)
-  if self._input ~= "" then
-    pcall(vim.api.nvim_feedkeys, self._input, "t", false)
-  end
 
   vim.api.nvim_buf_attach(self._entry.buf, false, {
     on_lines = function(_, _, _, _, _, _, _)
@@ -380,7 +377,10 @@ function InputSession:post_start()
     end,
   })
 
-  if #self._items == 0 then
+  if self._input ~= "" then
+    -- Also refreshes the suggestions
+    self:set_input(self._input)
+  elseif #self._items == 0 then
     self:refresh_suggestions()
   end
 end

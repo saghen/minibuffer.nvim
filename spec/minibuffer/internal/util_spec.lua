@@ -1036,19 +1036,14 @@ describe("minibuffer.internal.util", function()
         util.set_cmdheight(states, true, 2)
 
         assert.stub(vim_api.nvim_win_call).called_with(1, match.is_function())
-
-        assert.stub(vim_fn.winrestview).called_with({
-          topline = 2,
-          lnum = 10,
-        })
+        assert.stub(vim_fn.winrestview).called_with(states[1].view)
       end)
 
-      it("does not move topline past the cursor line", function()
-        states[1].view = {
-          topline = 8,
-          lnum = 10,
-        }
-
+      it("scrolls when the cursor would be covered", function()
+        local vim_cmd_stub = helper.stub_method(vim, "cmd")
+        helper.stub_method(vim_fn, "line", function(expr)
+          return expr == "." and 10 or 9
+        end)
         helper.stub_method(vim_fn, "winlayout", function()
           return {
             "leaf",
@@ -1058,10 +1053,24 @@ describe("minibuffer.internal.util", function()
 
         util.set_cmdheight(states, true, 2)
 
-        assert.stub(vim_fn.winrestview).called_with(match.same({
-          topline = 9,
-          lnum = 10,
-        }))
+        assert.stub(vim_cmd_stub).called_with("normal! zb")
+      end)
+
+      it("does not scroll when the cursor stays visible", function()
+        local vim_cmd_stub = helper.stub_method(vim, "cmd")
+        helper.stub_method(vim_fn, "line", function(expr)
+          return expr == "." and 5 or 9
+        end)
+        helper.stub_method(vim_fn, "winlayout", function()
+          return {
+            "leaf",
+            1,
+          }
+        end)
+
+        util.set_cmdheight(states, true, 2)
+
+        assert.stub(vim_cmd_stub).called_at_most(0)
       end)
 
       it("preserves the original state view", function()

@@ -116,12 +116,12 @@ local function resize_windows_for_cmdheight(states, cmdheight)
       -- Set the window height
       vim.api.nvim_win_set_height(w, target_height)
 
-      -- Set the top line based on the amount we shrunk the window by
-      local view = vim.deepcopy(state.view)
-      local topline = math.min(view.topline + (state.height - target_height), view.lnum)
-      view.topline = topline
+      -- Keep the top line in place, only scrolling when the cursor would be covered
       vim.api.nvim_win_call(w, function()
-        vim.fn.winrestview(view)
+        vim.fn.winrestview(state.view)
+        if vim.fn.line(".") > vim.fn.line("w$") then
+          vim.cmd("normal! zb")
+        end
       end)
       return
     end

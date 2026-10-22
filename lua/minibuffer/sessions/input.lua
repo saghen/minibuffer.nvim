@@ -362,10 +362,7 @@ function InputSession:post_start()
     pcall(self.on_start, self, keyset)
   end
   state.active_window = util.focus_win(self._entry.win)
-
-  vim.api.nvim_win_call(self._entry.win, function()
-    vim.cmd("startinsert")
-  end)
+  util.start_insert(self._entry.win)
   if self._input ~= "" then
     pcall(vim.api.nvim_feedkeys, self._input, "t", false)
   end
@@ -467,10 +464,14 @@ function InputSession:close(done)
   end
 
   if vim.fn.mode():sub(1, 1) == "i" then
-    -- Wait till leaving insert mode to ensure window restoration works properly
+    -- Wait till leaving insert mode to ensure window restoration works properly. And until the
+    -- next tick, since returning to a prompt buffer that was left in insert mode only starts it
+    -- again once out of insert mode
     vim.api.nvim_create_autocmd("InsertLeave", {
       once = true,
-      callback = cleanup,
+      callback = function()
+        vim.schedule(cleanup)
+      end,
     })
     vim.cmd("stopinsert")
   else

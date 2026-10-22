@@ -708,7 +708,7 @@ describe("minibuffer.sessions.input", function()
       session:post_start()
 
       assert.stub(vim_api.nvim_win_call).called_at_least(1)
-      assert.stub(vim_cmd_stub).called_with("startinsert")
+      assert.stub(vim_cmd_stub).called_with("startinsert!")
     end)
 
     it("feeds initial input", function()
@@ -1389,9 +1389,13 @@ describe("minibuffer.sessions.input", function()
       assert.stub(util.restore_window_states).called_at_most(0)
     end)
 
-    it("performs cleanup from the InsertLeave callback", function()
+    it("performs cleanup on the tick after the InsertLeave callback", function()
       helper.stub_method(vim_fn, "mode", function()
         return "i"
+      end)
+      local scheduled = {}
+      helper.stub_method(vim, "schedule", function(callback)
+        scheduled[#scheduled + 1] = callback
       end)
 
       session:close()
@@ -1399,6 +1403,8 @@ describe("minibuffer.sessions.input", function()
       local callback = vim_api.nvim_create_autocmd.calls[1].refs[2].callback
       callback()
 
+      assert.stub(util.restore_window_states).called_at_most(0)
+      scheduled[1]()
       assert.stub(util.restore_window_states).called_with(states)
       assert.is_nil(session._display.win)
       assert.is_nil(session._entry.win)

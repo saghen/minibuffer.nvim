@@ -198,6 +198,29 @@ function M.enable_buffer_ts(buf, enable)
   highlighter.active[ext.bufs.cmd] = enable and highlighter or nil
 end
 
+--- Start insert mode at the end of the line in the window, which must be the current one.
+--- Leaving a prompt buffer in insert mode stops it, and `:startinsert` is ignored while insert
+--- mode is stopping, so then it waits for that. Appending, since stopping insert mode moves the
+--- cursor left
+---@param win integer
+function M.start_insert(win)
+  if vim.fn.mode():sub(1, 1) ~= "i" then
+    vim.api.nvim_win_call(win, function()
+      vim.cmd("startinsert!")
+    end)
+    return
+  end
+  vim.api.nvim_create_autocmd("ModeChanged", {
+    once = true,
+    pattern = "i:*",
+    callback = function()
+      if vim.api.nvim_get_current_win() == win then
+        vim.cmd("startinsert!")
+      end
+    end,
+  })
+end
+
 ---@param win integer
 ---@return integer|nil
 function M.focus_win(win)

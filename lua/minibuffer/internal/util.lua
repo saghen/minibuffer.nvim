@@ -200,8 +200,8 @@ end
 
 --- Start insert mode at the end of the line in the window, which must be the current one.
 --- Leaving a prompt buffer in insert mode stops it, and `:startinsert` is ignored while insert
---- mode is stopping, so then it waits for that. Appending, since stopping insert mode moves the
---- cursor left
+--- mode is stopping, so then it waits for that, and until the next tick, since it's ignored
+--- during ModeChanged too. Appending, since stopping insert mode moves the cursor left
 ---@param win integer
 function M.start_insert(win)
   if vim.fn.mode():sub(1, 1) ~= "i" then
@@ -213,11 +213,11 @@ function M.start_insert(win)
   vim.api.nvim_create_autocmd("ModeChanged", {
     once = true,
     pattern = "i:*",
-    callback = function()
+    callback = vim.schedule_wrap(function()
       if vim.api.nvim_get_current_win() == win then
         vim.cmd("startinsert!")
       end
-    end,
+    end),
   })
 end
 
